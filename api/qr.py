@@ -81,7 +81,13 @@ def generate_qr_code(message, ecc, version, mask):
         message = message.decode("utf-8")
 
     segs = QrSegment.make_segments(message)
-    return QrCode.encode_segments(segs, getattr(QrCode.Ecc, ecc), version, mask)
+    return QrCode.encode_segments(
+        segs,
+        getattr(QrCode.Ecc, ecc),
+        minversion=version,
+        maxversion=version,
+        mask=mask,
+    )
 
 
 def qr_matrix_rgb(qr):
