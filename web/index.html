@@ -140,7 +140,7 @@
           const fetchResult = await fetch(generateURL);
           const responseTest = await fetchResult.text();
 
-          const results = responseTest.split("   ");
+          const results = responseTest.split("\n");
           const message = results[0];
           const imagePath = results[1];
 

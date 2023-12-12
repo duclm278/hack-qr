@@ -338,13 +338,12 @@ function scan(matrix) {
         var extracted = extractor_1.extract(matrix, location_1);
         var decoded = decoder_1.decode(extracted.matrix);
         if (decoded) {
-            console.log("INDEX GOT DECODED: ", decoded);
             return {
                 binaryData: decoded.bytes,
                 data: decoded.text,
                 chunks: decoded.chunks,
-                version: decoded.version,
                 ecc: decoded.ecc,
+                version: decoded.version,
                 mask: decoded.mask,
                 location: {
                     topRightCorner: extracted.mappingFunction(location_1.dimension, 0),
@@ -792,7 +791,7 @@ function decodeMatrix(matrix) {
         }
     }
     try {
-        return decodeData_1.decode(resultBytes, version.versionNumber, formatInfo.errorCorrectionLevel, formatInfo.dataMask);
+        return decodeData_1.decode(resultBytes, formatInfo.errorCorrectionLevel, version.versionNumber, formatInfo.dataMask);
     }
     catch (_a) {
         return null;
@@ -952,7 +951,7 @@ function decodeKanji(stream, size) {
     }
     return { bytes: bytes, text: text };
 }
-function decode(data, version, ecc, mask) {
+function decode(data, ecc, version, mask) {
     var _a, _b, _c, _d;
     var stream = new BitStream_1.BitStream(data);
     // There are 3 'sizes' based on the version. 1-9 is small (0), 10-26 is medium (1) and 27-40 is large (2).
@@ -961,11 +960,10 @@ function decode(data, version, ecc, mask) {
         text: "",
         bytes: [],
         chunks: [],
-        version: version,
         ecc: ecc,
+        version: version,
         mask: mask
     };
-    console.log("DECODER GOT DATA: ", result);
     while (stream.available() >= 4) {
         var mode = stream.readBits(4);
         if (mode === ModeByte.Terminator) {
