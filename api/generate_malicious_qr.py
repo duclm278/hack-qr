@@ -57,24 +57,24 @@ def task(args):
     # Rx = Qx AND Dx (AND = element-wise AND)
     # Dx = Q0 XOR Qx,
     # Qx = code in qr_codes
-    return is_code_valid((q0, original_message, qr_code_matrix))
+    return is_valid_code((q0, original_message, qr_code_matrix))
 
 
-def generate_malicious_qr(message, ecc, version, mask, image_name):
+def generate_malicious_qr(original_message, ecc, version, mask, image_name):
     common.init_pool()
 
     print(">>> QR CODE")
-    print("Message: ", message)
+    print("Message: ", original_message)
     print("ECC: ", ecc)
     print("Version: ", version)
     print("Mask: ", mask)
 
-    q0 = qr.generate_qr_code(message, ecc, version, mask)
+    q0 = qr.generate_qr_code(original_message, ecc, version, mask)
     q0 = qr.qr_matrix(q0)
 
     # Try for each hamming distance
     start_p = None
-    for i in range(1, len(message)):
+    for i in range(1, len(original_message)):
         print(">>> HAMMING DISTANCE: ", i)
         # 2. Generate several messages Mi, i = 1,...,n, that contain URLs to
         # possible phishing sites (the new messages are generated in a way to
@@ -83,7 +83,7 @@ def generate_malicious_qr(message, ecc, version, mask, image_name):
         start_m = time.time()
         print("Generating messages...")
         malicious_messages = hamming.generate_messages(
-            message, i
+            original_message, i
         )  # ['http://yghqo.at']
         print("Number of messages: ", len(malicious_messages))
         print("Finished in: ", time.time() - start_m)
@@ -91,8 +91,8 @@ def generate_malicious_qr(message, ecc, version, mask, image_name):
         start_p = time.time()
         print("Generating solutions...")
         args = [
-            (task, ((message, mm, ecc, version, mask),), {})
-            for mm in malicious_messages
+            (task, ((original_message, malicious_message, ecc, version, mask),), {})
+            for malicious_message in malicious_messages
         ]
         check_codes = common.POOL.imap_unordered(unwrap, args)
         for qx_prime in check_codes:
@@ -101,7 +101,7 @@ def generate_malicious_qr(message, ecc, version, mask, image_name):
                 common.POOL.terminate()
                 common.POOL.join()
                 print("Finished in: ", time.time() - start_p)
-                return save_solution(q0, message, qx_prime, image_name)
+                return save_solution(q0, original_message, qx_prime, image_name)
         print("Finished in: ", time.time() - start_p)
     return ""
 
@@ -319,14 +319,15 @@ def save_solution(q0, m0, qx, image_name):
     img = Image.fromarray(rgb_q0, "RGB")
 
     # save txt file of malicious url
+    decoded = qr.decode_qr_matrix(qx_prime)
     with open("demo/" + image_name + ".txt", "w") as file:
-        file.write(m0)
+        file.write(decoded)
 
     img.save("demo/" + "diff_" + image_name + ".png")
     return "diff_" + image_name  # decoded
 
 
-def is_code_valid(args):
+def is_valid_code(args):
     # q0, m0, qx, image_name = args
     q0, m0, qx = args
     dx = np.logical_xor(q0, qx)
@@ -338,7 +339,10 @@ def is_code_valid(args):
     decoded = qr.decode_qr_matrix(qx_prime)
     if not decoded:
         return None
-    return qx_prime if decoded != m0 else None
+    if decoded != m0:
+        print(f"DEBUG: m0: {m0}, decoded: {decoded}")
+        return qx_prime
+    return None
     # if not decoded:
     #     return
     # if decoded != m0:
@@ -379,7 +383,7 @@ def verify_solution(q0, m0, ordered_qr_codes, image_name):
     ]
 
     for arg in args:
-        output_path = is_code_valid(arg)
+        output_path = is_valid_code(arg)
         if output_path:
             return output_path
     return
@@ -396,7 +400,7 @@ if __name__ == "__main__":
         #     image_name="thinkific",
         # )
         generate_malicious_qr(
-            message="http://yahoo.at",
+            original_message="http://yahoo.at",
             ecc="LOW",
             version=1,
             mask=7,
