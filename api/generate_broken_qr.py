@@ -5,7 +5,7 @@ def generate_broken_qr(message, ecc, version, mask, filename):
     q0 = qr.generate_qr_code(message, ecc, version, mask)
     qr_matrix = qr.qr_matrix(q0)
     broken_qr_matrix = cover_format_modules(qr_matrix)
-    output_path = "./demo/" + filename + ".png"
+    output_path = "demo/" + filename + ".png"
     qr.qr_matrix_image(broken_qr_matrix, output_path, show=False)
     return output_path
 

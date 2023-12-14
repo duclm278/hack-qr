@@ -298,7 +298,7 @@ def save_solution(q0, m0, qx, image_name):
     rx = np.logical_and(qx, dx)
     qx_prime = np.logical_or(q0, rx)
 
-    output_path = "./demo/" + image_name + ".png"
+    output_path = "demo/" + image_name + ".png"
     qr.qr_matrix_image(qx_prime, output_path)
     diff = qr.qr_diff(
         q0, qx_prime

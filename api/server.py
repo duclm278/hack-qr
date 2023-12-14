@@ -25,7 +25,7 @@ def tamper():
     print("ECC: ", ecc)
     print("MASK: ", mask)
 
-    filename = str(datetime.datetime.now())
+    filename = str(datetime.datetime.now()).replace(":", "_")
     print("FILENAME: ", filename)
 
     output_path = generate_malicious_qr(message, ecc, version, mask, filename)
@@ -50,7 +50,7 @@ def destroy():
     print("ECC: ", ecc)
     print("MASK: ", mask)
 
-    filename = str(datetime.datetime.now())
+    filename = str(datetime.datetime.now()).replace(":", "_")
     print("FILENAME: ", filename)
 
     output_path = generate_broken_qr(message, ecc, version, mask, filename)
