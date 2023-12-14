@@ -1,5 +1,6 @@
 import datetime
 
+import common
 from flask import Flask, request, send_file
 from flask_cors import CORS
 from generate_broken_qr import generate_broken_qr
@@ -62,4 +63,11 @@ def get_image():
     return send_file("demo/" + name + ".png", mimetype="image/png")
 
 
-app.run(host="127.0.0.1", port=8080)
+if __name__ == "__main__":
+    common.init_pool(num_processes=1)
+    try:
+        app.run(host="127.0.0.1", port=8080)
+    except KeyboardInterrupt:
+        if common.POOL:
+            common.POOL.terminate()
+            common.POOL.join()

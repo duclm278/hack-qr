@@ -1,14 +1,12 @@
 import time
-from multiprocessing import Pool
 
+import common
 import cv2
 import hamming
 import numpy as np
 import qr
 from PIL import Image
 from qrcodegen import *
-
-_pool = None
 
 
 def unwrap(desc):
@@ -63,6 +61,8 @@ def task(args):
 
 
 def generate_malicious_qr(message, ecc, version, mask, image_name):
+    common.init_pool()
+
     print(">>> QR CODE")
     print("Message: ", message)
     print("ECC: ", ecc)
@@ -89,20 +89,20 @@ def generate_malicious_qr(message, ecc, version, mask, image_name):
         print("Finished in: ", time.time() - start_m)
 
         start_p = time.time()
-        print("Processing solutions...")
+        print("Generating solutions...")
         args = [
             (task, ((message, mm, ecc, version, mask),), {})
             for mm in malicious_messages
         ]
-        check_codes = _pool.map_async(unwrap, args)
-        for check_code in check_codes.get():
+        check_codes = common.POOL.imap_unordered(unwrap, args)
+        for check_code in check_codes:
             if check_code:
                 print("Found solution, terminating...")
-                _pool.terminate()
-                _pool.join()
+                common.POOL.terminate()
+                common.POOL.join()
                 print("Finished in: ", time.time() - start_p)
                 return save_solution(q0, message, check_code, image_name)
-    print("Finished in: ", time.time() - start_p)
+        print("Finished in: ", time.time() - start_p)
     return ""
 
 
@@ -142,11 +142,11 @@ def generate_malicious_qr(message, ecc, version, mask, image_name):
 #             (qr.generate_qr_code, (message, ecc, version, mask), {})
 #             for message in messages
 #         ]
-#         qr_codes = _pool.map(unwrap, args)
+#         qr_codes = common.POOL.map(unwrap, args)
 
 #         # qr_code_matrices = [qr.qr_matrix(q) for q in qr_codes]
 #         args = [(qr.qr_matrix, (q,), {}) for q in qr_codes]
-#         qr_code_matrices = _pool.map(unwrap, args)
+#         qr_code_matrices = common.POOL.map(unwrap, args)
 #         print("Finished in: ", time.time() - start_q)
 
 #         # 4. Construct the symmetric difference Di of the generated QR code to
@@ -166,7 +166,7 @@ def generate_malicious_qr(message, ecc, version, mask, image_name):
 #         #     calculate_ratio(q0, qi, dx) for qi, dx in symmetric_diffs
 #         # ]
 #         args = [(calculate_ratio, (q0, qi, dx), {}) for qi, dx in symmetric_diffs]
-#         symmetric_diff_ratios = _pool.map(unwrap, args)
+#         symmetric_diff_ratios = common.POOL.map(unwrap, args)
 #         print("Finished in: ", time.time() - start_sd)
 
 #         # 6. Order the QR codes by ratio ri, descending. Codes where the number
@@ -196,12 +196,12 @@ def generate_malicious_qr(message, ecc, version, mask, image_name):
 #             for i in range(len(ordered_codes))
 #         ]
 #         valid_codes = []
-#         result = _pool.map_async(unwrap, args)
+#         result = common.POOL.map_async(unwrap, args)
 #         for i, value in enumerate(result.get()):
 #             # if value:
-#             #     # _pool.close()
-#             #     _pool.terminate()
-#             #     _pool.join()
+#             #     # common.POOL.close()
+#             #     common.POOL.terminate()
+#             #     common.POOL.join()
 #             #     valid_code = value
 #             #     break
 #             if value:
@@ -386,7 +386,7 @@ def verify_solution(q0, m0, ordered_qr_codes, image_name):
 
 
 if __name__ == "__main__":
-    _pool = Pool(processes=5)
+    common.init_pool(num_processes=1)
     try:
         # generate_malicious_qr(
         #     message="https://www.thinkific.com",
@@ -403,6 +403,7 @@ if __name__ == "__main__":
             image_name="yahoo",
         )
     except KeyboardInterrupt:
-        # _pool.close()
-        _pool.terminate()
-        _pool.join()
+        if common.POOL:
+            # common.POOL.close()
+            common.POOL.terminate()
+            common.POOL.join()
