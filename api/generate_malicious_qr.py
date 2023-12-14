@@ -95,13 +95,13 @@ def generate_malicious_qr(message, ecc, version, mask, image_name):
             for mm in malicious_messages
         ]
         check_codes = common.POOL.imap_unordered(unwrap, args)
-        for check_code in check_codes:
-            if check_code:
+        for qx_prime in check_codes:
+            if qx_prime is not None:
                 print("Found solution, terminating...")
                 common.POOL.terminate()
                 common.POOL.join()
                 print("Finished in: ", time.time() - start_p)
-                return save_solution(q0, message, check_code, image_name)
+                return save_solution(q0, message, qx_prime, image_name)
         print("Finished in: ", time.time() - start_p)
     return ""
 
@@ -337,8 +337,8 @@ def is_code_valid(args):
     # decoded and results in a different message than the original.
     decoded = qr.decode_qr_matrix(qx_prime)
     if not decoded:
-        return False
-    return True if decoded != m0 else False
+        return None
+    return qx_prime if decoded != m0 else None
     # if not decoded:
     #     return
     # if decoded != m0:
